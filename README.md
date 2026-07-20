@@ -307,3 +307,25 @@ Expected output:
 ```
 
 After increasing the inotify limits, the 3-control-plane / 3-worker KIND cluster was successfully created.
+
+## Kubernetes Recommended Labels
+
+This project follows the official Kubernetes recommended application labels.
+
+Implemented labels:
+
+- `app.kubernetes.io/name`
+- `app.kubernetes.io/instance`
+- `app.kubernetes.io/version`
+- `app.kubernetes.io/component`
+- `app.kubernetes.io/part-of`
+- `app.kubernetes.io/managed-by`
+
+These labels improve resource organization and compatibility with Kubernetes tooling such as Helm, ArgoCD, Prometheus, Grafana, and Lens.
+
+The Kubernetes Service selects Pods using the recommended label:
+
+```yaml
+selector:
+  app.kubernetes.io/name: nginx
+```

@@ -3,8 +3,14 @@ kind: Deployment
 
 metadata:
   name: nginx-deployment
+
   labels:
-    app: nginx
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/instance: nginx
+    app.kubernetes.io/version: "1.33"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: kubernetes-nginx
+    app.kubernetes.io/managed-by: kubectl
 
 spec:
   replicas: 3
@@ -16,6 +22,11 @@ spec:
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: nginx
+        app.kubernetes.io/instance: nginx
+        app.kubernetes.io/version: "1.33"
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: kubernetes-nginx
         app: nginx
 
     spec:
