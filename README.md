@@ -196,3 +196,114 @@ Pods (x3)
     │
 Nginx Containers
 ```
+---
+
+---
+
+## High Availability KIND Cluster
+
+This project uses a **multi-node Kubernetes cluster** created with KIND to simulate a production-like environment.
+
+### Cluster Topology
+
+- **3 Control Plane nodes**
+  - API Server
+  - Scheduler
+  - Controller Manager
+  - etcd
+
+- **3 Worker nodes**
+  - Run application workloads
+  - Host Kubernetes Pods
+
+- **1 External Load Balancer**
+  - Automatically created by KIND to expose the Kubernetes API in a highly available control plane.
+
+The cluster is created declaratively using:
+
+```bash
+kind create cluster --name nginx-cluster --config kind/kind-config.yaml
+```
+
+Architecture:
+
+```text
+                    KIND Cluster
+
+      ┌──────────────┬──────────────┬──────────────┐
+      │ ControlPlane1│ ControlPlane2│ ControlPlane3│
+      └──────────────┴──────────────┴──────────────┘
+                     High Availability
+                             │
+                Kubernetes Scheduler
+                             │
+        ┌────────────────────┼────────────────────┐
+        ▼                    ▼                    ▼
+    Worker1              Worker2             Worker3
+```
+
+The cluster is fully declarative and can be recreated at any time using the `kind-config.yaml` configuration file.
+
+---
+
+## Troubleshooting
+
+### WSL2 - Multi-node KIND Cluster
+
+While creating a **6-node KIND cluster (3 control planes + 3 workers)** on WSL2, cluster creation initially failed during the `kubeadm join` phase.
+
+#### Symptoms
+
+- Cluster creation stopped at:
+  - `Joining more control-plane nodes`
+  - `Joining worker nodes`
+- Error message:
+
+```text
+failed to join node with kubeadm
+```
+
+#### Root Cause
+
+The default Linux **inotify** limit on WSL2 was too low.
+
+The default value:
+
+```text
+fs.inotify.max_user_instances = 128
+```
+
+is sufficient for small clusters but not for larger KIND deployments where several Kubernetes nodes are started simultaneously.
+
+#### Temporary Fix
+
+```bash
+sudo sysctl -w fs.inotify.max_user_instances=2048
+sudo sysctl -w fs.inotify.max_user_watches=1048576
+```
+
+#### Permanent Fix
+
+Create a dedicated sysctl configuration:
+
+```bash
+echo "fs.inotify.max_user_instances=2048" | sudo tee /etc/sysctl.d/99-kind.conf
+echo "fs.inotify.max_user_watches=1048576" | sudo tee -a /etc/sysctl.d/99-kind.conf
+sudo sysctl --system
+```
+
+#### Verification
+
+```bash
+cat /proc/sys/fs/inotify/max_user_instances
+cat /proc/sys/fs/inotify/max_user_watches
+```
+
+Expected output:
+
+```text
+2048
+1048576
+```
+
+After increasing the inotify limits, the 3-control-plane / 3-worker KIND cluster was successfully created.
